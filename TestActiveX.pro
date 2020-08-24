@@ -18,15 +18,15 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     docxreport.cpp \
     main.cpp \
-    mainwindow.cpp
+#    mainwindow.cpp
 
 HEADERS += \
     docxreport.h \
-    mainwindow.h
+#    mainwindow.h
 
 FORMS += \
     docxreport.ui \
-    mainwindow.ui
+#    mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

@@ -34,7 +34,8 @@ private:
     QStringList m_ranks;
 
     QString m_templateFile;
-    QAxWidget *m_word01 = nullptr;
+    QAxWidget *m_wWidget = nullptr;
+    QAxObject *m_wApp = nullptr;
     QAxObject *m_normalStyle = nullptr;
 
     QStringList m_learners;

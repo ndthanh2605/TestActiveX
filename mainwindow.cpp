@@ -15,11 +15,18 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     if (m_word01) {
+        on_actionClose_triggered();
+
         QAxObject *wApp = m_word01->querySubObject("Application");
         wApp->dynamicCall("Quit (void)");
     }
 
     delete ui;
+}
+
+void MainWindow::close()
+{
+
 }
 
 
@@ -133,8 +140,19 @@ void MainWindow::on_pbSave_clicked()
 
 void MainWindow::on_actionClose_triggered()
 {
+    qDebug() << "on_actionClose_triggered";
     if (m_word01) {
+        qDebug() << "process CLOSE";
+        ui->scrollAreaWidgetContents_1->layout()->removeWidget(m_word01);
         QAxObject *wApp = m_word01->querySubObject("Application");
+        QAxObject *wDoc = wApp->querySubObject("ActiveDocument");
+        if (wDoc)
+            wDoc->dynamicCall("Close ()");
         wApp->dynamicCall("Quit ()");
+        m_word01->clear();
+
+        delete m_word01;
+        m_word01 = NULL;
+        qDebug() << "quit word";
     }
 }

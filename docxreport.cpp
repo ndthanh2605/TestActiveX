@@ -42,11 +42,13 @@ void DocxReport::on_actionOpen_triggered()
 
     qDebug() << "open template:" << m_templateFile;
 
-    m_word01 = new QAxWidget("Word.Application", this);
-    m_word01->show();
-    m_word01->setControl(m_templateFile);
+    m_wWidget = new QAxWidget("Word.Application", this);
+    m_wWidget->show();
+    m_wWidget->setControl(m_templateFile);
 
-    ui->scrollAreaWidgetContents->layout()->addWidget(m_word01);
+    ui->scrollAreaWidgetContents->layout()->addWidget(m_wWidget);
+    m_wApp = m_wWidget->querySubObject("Application");
+    m_wApp->querySubObject("Documents")->querySubObject("Item(int)", 1)->dynamicCall("Activate()");
     qDebug() << "Done!";
 }
 
@@ -141,14 +143,14 @@ QString DocxReport::randomName()
 
 void DocxReport::on_pbProcess_clicked()
 {
-    if (m_templateFile.isEmpty() || !m_word01) {
+    if (m_templateFile.isEmpty() || !m_wWidget || !m_wApp) {
         qCritical() << "INVALID file";
         return;
     }
 
-    QAxObject *wApp = m_word01->querySubObject("Application");
-    wApp->querySubObject("Documents")->querySubObject("Item(int)", 1)->dynamicCall("Activate()");
-    QAxObject *doc = wApp->querySubObject("ActiveDocument");
+//    QAxObject *wApp = m_wWidget->querySubObject("Application");
+//    wApp->querySubObject("Documents")->querySubObject("Item(int)", 1)->dynamicCall("Activate()");
+    QAxObject *doc = m_wApp->querySubObject("ActiveDocument");
 
     QAxObject *words = doc->querySubObject("Words");
     int countWord = words->dynamicCall("Count()").toInt();
@@ -158,7 +160,7 @@ void DocxReport::on_pbProcess_clicked()
         QString w = range->dynamicCall("Text()").toString();
         QString st = style->dynamicCall("NameLocal()").toString();
 
-        if (st.toLower().startsWith("subtitle")) {
+        if (st.toLower().startsWith("subtitle") && !w.trimmed().isEmpty()) {
             qDebug() << "FOUND word to replace:" << w;
             m_replaces.insert(w.trimmed().toLower(), range);
         }
@@ -173,10 +175,10 @@ void DocxReport::on_pbProcess_clicked()
 
 void DocxReport::on_pbPreview_clicked()
 {
-    if (!m_word01)
+    if (!m_wWidget)
         return;
 
-    QAxObject *wApp = m_word01->querySubObject("Application");
+    QAxObject *wApp = m_wWidget->querySubObject("Application");
     for (auto itr = m_replaces.begin(); itr != m_replaces.end(); itr++) {
         QString v = getValueByKey(itr.key());
         qDebug() << "get value by key" << itr.key() << ":" << v;
@@ -192,22 +194,32 @@ void DocxReport::on_pbPreview_clicked()
 
 void DocxReport::on_actionClose_triggered()
 {
-    if (m_word01) {
-        QAxObject *wApp = m_word01->querySubObject("Application");
-        QAxObject *doc = wApp->querySubObject("ActiveDocument");
-//        if (doc)
-//            doc->dynamicCall("Close ()");
-        wApp->dynamicCall("Quit (void)");
+    if (m_wWidget && m_wApp) {
+        QAxObject *doc = m_wApp->querySubObject("Documents");
+        if (doc) {
+            qDebug() << "close doc?";
+            doc->dynamicCall("Close (0)");
+        }
+        m_wApp->dynamicCall("Quit (void)");
+        m_wWidget->clear();
+//        ui->scrollAreaWidgetContents->layout()->removeWidget(m_wWidget);
+
+        delete m_wWidget;
+        m_wWidget = nullptr;
     }
 }
 
 void DocxReport::on_pbSave_clicked()
 {
+    if (!m_wWidget || !m_wApp) {
+        QMessageBox::warning(this, "Cảnh báo", "Chưa mở file word!");
+    }
+
     QString save = QFileDialog::getSaveFileName(this, tr("Save Report"), "D:/", tr("Document Files (*.docx *.doc)"));
     if (save.isEmpty())
         return;
 
-    QAxObject *wApp = m_word01->querySubObject("Application");
+    QAxObject *wApp = m_wWidget->querySubObject("Application");
     QAxObject *doc = wApp->querySubObject("ActiveDocument");
     doc->dynamicCall("SaveAs (const QString&)", save);
 }

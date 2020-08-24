@@ -16,6 +16,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void close();
+
 private slots:
     void on_actionOpen_triggered();
 
